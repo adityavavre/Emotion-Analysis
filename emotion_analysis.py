@@ -364,7 +364,7 @@ if __name__ == '__main__':
     data_dir = args.data
     do_train = args.train
 
-    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
     labels = ["no emotion", "anger", "disgust", "fear", "happiness", "sadness", "surprise"]
     label2id = {v: i for i, v in enumerate(labels)}
     id2label = {i: v for i, v in enumerate(labels)}
