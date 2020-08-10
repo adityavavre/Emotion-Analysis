@@ -2,7 +2,8 @@ import pickle
 from typing import List
 import numpy as np
 from nltk.tokenize import word_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+import textblob
 
 from utils import preprocess, read_data_from_dir
 
@@ -49,8 +50,52 @@ def get_tf_idf(sentences: List, corpus: List):
     vectorizer.fit(corpus)
     print("Fit done")
 
-    return vectorizer.transform(sentences)
+    return vectorizer.transform(sentences).toarray()
 
+def get_word_ngrams(sentences: List, corpus: List):
+    vectorizer = CountVectorizer(ngram_range=(2, 3),
+                                 stop_words='english',
+                                 analyzer='word',
+                                 token_pattern=r'\b\w+\b',
+                                 min_df=1,
+                                 max_features=100)
+    print("Fitting corpus to n-gram(n=2,3) vectorizer")
+    vectorizer.fit(corpus)
+    print("Fit done")
+
+    return vectorizer.transform(sentences).toarray()
+
+
+def get_pos_counts(sentences: List):
+    counts = {}
+    pos_family = {
+        'noun': ['NN', 'NNS', 'NNP', 'NNPS'],
+        'pron': ['PRP', 'PRP$', 'WP', 'WP$'],
+        'verb': ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ'],
+        'adj': ['JJ', 'JJR', 'JJS'],
+        'adv': ['RB', 'RBR', 'RBS', 'WRB']
+    }
+
+    # function to check and get the part of speech tag count of a words in a given sentence
+    def check_pos_tag(x, flag):
+        cnt = 0
+        try:
+            wiki = textblob.TextBlob(x)
+            for tup in wiki.tags:
+                ppo = list(tup)[1]
+                if ppo in pos_family[flag]:
+                    cnt += 1
+        except:
+            pass
+        return cnt
+
+    counts['noun_count'] = list(map(lambda x: check_pos_tag(x, 'noun'), sentences))
+    counts['verb_count'] = list(map(lambda x: check_pos_tag(x, 'verb'), sentences))
+    counts['adj_count'] = list(map(lambda x: check_pos_tag(x, 'adj'), sentences))
+    counts['adv_count'] = list(map(lambda x: check_pos_tag(x, 'adv'), sentences))
+    counts['pron_count'] = list(map(lambda x: check_pos_tag(x, 'pron'), sentences))
+
+    return counts
 
 def extract_features(sentences: List, corpus: List):
     features = {}
@@ -76,6 +121,18 @@ def extract_features(sentences: List, corpus: List):
     tf_idf_features = get_tf_idf(pre_processed_sentences, pre_processed_corpus)
     print("Finished tf-idf feature extraction")
     features['tf_idf'] = tf_idf_features
+
+    # get word n-gram vectors
+    print("Extracting word n-grams vector feature")
+    word_ngram_features = get_word_ngrams(pre_processed_sentences, pre_processed_corpus)
+    print("Finished word n-grams feature extraction")
+    features['n_gram'] = word_ngram_features
+
+    # get POS counts
+    print("Extracting POS counts features")
+    pos_counts_features = get_pos_counts(sentences)
+    print("Finished POS counts feature extraction")
+    features.update(pos_counts_features)
 
     return features
 

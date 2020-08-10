@@ -1,7 +1,7 @@
 import argparse
 import os
 from collections import defaultdict
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from utils import read_data_from_dir
 import logging
 
@@ -57,7 +57,7 @@ def create_data_loader(data_dir: str,
                        split: str,
                        tokenizer: PreTrainedTokenizer,
                        max_len: int,
-                       batch_size: int) -> DataLoader:
+                       batch_size: int) -> Tuple[DataLoader, int]:
     utterances, emotions, _ = read_data_from_dir(data_dir, split=split)
     ds = DailyDialogDataset(
         utterances=utterances,
@@ -68,7 +68,7 @@ def create_data_loader(data_dir: str,
     return DataLoader(
         ds,
         batch_size=batch_size,
-        num_workers=4)
+        num_workers=4), len(utterances)
 
 
 class EmotionClassifier(nn.Module):
@@ -199,7 +199,9 @@ class EmotionAnalyser():
     def train(
             self,
             train_data_loader: DataLoader,
+            train_num_examples: int,
             val_data_loader: DataLoader,
+            val_num_examples: int,
             output_dir: str = './saved_models/',
             num_epochs: int = 2,
             lr: float = 2e-5):
@@ -235,14 +237,14 @@ class EmotionAnalyser():
                 loss_fn,
                 optimizer,
                 scheduler,
-                len(train_data_loader),
+                train_num_examples,
                 kbar
             )
 
             val_acc, val_loss = self.eval_model(
                 val_data_loader,
                 loss_fn,
-                len(val_data_loader)
+                val_num_examples
             )
 
             history['train_acc'].append(train_acc)
@@ -381,11 +383,11 @@ if __name__ == '__main__':
         EPOCHS = 10
         LEARNING_RATE = 2e-5
 
-        train_data_loader = create_data_loader(data_dir, "train", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
-        val_data_loader = create_data_loader(data_dir, "validation", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
-        test_data_loader = create_data_loader(data_dir, "test", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
+        train_data_loader, train_num_examples = create_data_loader(data_dir, "train", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
+        val_data_loader, val_num_examples = create_data_loader(data_dir, "validation", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
+        test_data_loader, test_num_examples = create_data_loader(data_dir, "test", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
 
-        analyser.train(train_data_loader, val_data_loader, num_epochs=EPOCHS, lr=LEARNING_RATE)
+        analyser.train(train_data_loader, train_num_examples, val_data_loader, val_num_examples, num_epochs=EPOCHS, lr=LEARNING_RATE)
 
         ## predictions on test set
         utterances, predictions, prediction_probs, real_values = analyser.get_predictions(test_data_loader, id2label)
