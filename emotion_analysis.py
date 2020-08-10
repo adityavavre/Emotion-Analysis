@@ -376,8 +376,8 @@ if __name__ == '__main__':
     if do_train:
         analyser = EmotionAnalyser(model, device)
 
-        MAX_LEN = 128
-        BATCH_SIZE = 128
+        MAX_LEN = 64
+        BATCH_SIZE = 32
         EPOCHS = 10
         LEARNING_RATE = 2e-5
 
