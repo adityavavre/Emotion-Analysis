@@ -106,12 +106,10 @@ def preprocess(data):
     data = convert_lower_case(data)
     data = remove_punctuation(data)
     data = remove_apostrophe(data)
-    data = remove_stop_words(data)
     data = convert_numbers(data)
     data = remove_punctuation(data)
     data = convert_numbers(data)
     data = remove_punctuation(data)
-    data = remove_stop_words(data)
     return data
 
 if __name__ == '__main__':
