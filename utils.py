@@ -110,7 +110,13 @@ def preprocess(data):
     data = remove_punctuation(data)
     data = convert_numbers(data)
     data = remove_punctuation(data)
-    return data
+    return str(data)
+
+class Tokenizer():
+    def __init__(self):
+        self.tokenizer = word_tokenize
+    def tokenize(self, x):
+        return self.tokenizer(x)
 
 if __name__ == '__main__':
     a, b, c = read_data_from_dir('./data/dailydialog/', 'train')

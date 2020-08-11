@@ -342,13 +342,6 @@ class EmotionAnalyser():
     #     print()
     #     return id2label[prediction.item()]
 
-
-# def load_data_from_file(filename: str, label2id: Dict):
-#     df = pd.read_csv(filename, encoding='utf-8')
-#     df['Sentiment'] = df['Sentiment'].map(label2id)
-#     return df
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Argument parser for pipeline")
     parser.add_argument('-m', '--model', action="store", dest="model", type=str, required=True)

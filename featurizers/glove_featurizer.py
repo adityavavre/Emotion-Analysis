@@ -23,7 +23,7 @@ class GloveFeaturizer():
         features = []
         print("Collecting avg. sentence embeddings from GloVe")
         for sent in sentences:
-            tokenize_word = tokenizer(sent)
+            tokenize_word = tokenizer.tokenize(sent)
             vec = np.array([0.] * self.embedding_dim, dtype='float32')
             count = 0
             for word in tokenize_word:
