@@ -13,6 +13,14 @@ from sklearn.metrics import classification_report, accuracy_score
 
 from utils import read_data_from_dir
 
+def get_report(model, X, Y_true, labels: List, split: str):
+    Y_pred_proba = model.predict_proba(X)
+    Y_pred = np.argmax(Y_pred_proba, axis=1)
+    report = classification_report(Y_true, Y_pred, target_names=labels, output_dict=True)
+    acc = accuracy_score(Y_true, Y_pred)
+    print(split+" accuracy: ", acc)
+    print(classification_report(Y_true, Y_pred, target_names=labels))
+    return report, acc
 
 def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels):
     print("Setting model params: ", params)
@@ -26,26 +34,11 @@ def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, param
     print("Fit done")
     print("Total training time: %s seconds", duration)
 
-    Y_pred_proba = model.predict_proba(X_train)
-    Y_pred = np.argmax(Y_pred_proba, axis=1)
-    train_report = classification_report(Y_train, Y_pred, target_names=labels)
-    train_acc = accuracy_score(Y_train, Y_pred)
-    print("Train Accuracy: ", train_acc)
-    print(train_report)
+    train_report, train_acc = get_report(model, X_train, Y_train, labels=labels, split="Train")
 
-    Y_pred_proba = model.predict_proba(X_valid)
-    Y_pred = np.argmax(Y_pred_proba, axis=1)
-    valid_report = classification_report(Y_valid, Y_pred, target_names=labels)
-    valid_acc = accuracy_score(Y_valid, Y_pred)
-    print("Validation Accuracy: ", valid_acc)
-    print(valid_report)
+    valid_report, valid_acc = get_report(model, X_valid, Y_valid, labels=labels, split="Validation")
 
-    Y_pred_proba = model.predict_proba(X_test)
-    Y_pred = np.argmax(Y_pred_proba, axis=1)
-    test_report = classification_report(Y_test, Y_pred, target_names=labels)
-    test_acc = accuracy_score(Y_test, Y_pred)
-    print("Test Accuracy: ", test_acc)
-    print(test_report)
+    test_report, test_acc = get_report(model, X_test, Y_test, labels=labels, split="Test")
 
     final_report = {
         "train_accuracy": train_acc,
@@ -70,6 +63,7 @@ def run_models(models_list: List,
     for name, model, params in zip(models_names, models_list, params_list):
         print("Executing model: ", name)
         trained_model, report = train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels)
+        os.makedirs(os.path.join(out_dir, name), exist_ok=True)
         model_path = os.path.join(out_dir, name, 'model.pkl')
         report_file = os.path.join(out_dir, name, 'report.json')
 
@@ -122,4 +116,11 @@ if __name__ == '__main__':
     models_names = ['logistic_regression']
     params_list = [{'verbose': False, 'max_iter': 1e8}]
 
-    run_models(models, models_names, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params_list=params_list, labels=labels, out_dir=out_dir)
+    run_models(models,
+               models_names,
+               X_train, Y_train,
+               X_valid, Y_valid,
+               X_test, Y_test,
+               params_list=params_list,
+               labels=labels,
+               out_dir=out_dir)
