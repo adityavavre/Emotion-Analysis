@@ -12,7 +12,7 @@ class TfIdfFeaturizer():
             analyzer='word',
             token_pattern=r'\w{1,}',
             ngram_range=(2,3),
-            max_features=5000)
+            max_features=100)
 
         self.corpus = corpus
 

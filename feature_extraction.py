@@ -1,6 +1,9 @@
 import pickle
 from typing import List, Dict
 
+import pandas as pd
+import numpy as np
+
 from featurizers.afinn_valence_featurizer import AFINNValenceFeaturizer
 from featurizers.bing_liu_sentiment_featurizer import BingLiuFeaturizer
 from featurizers.edinburgh_embeddings_featurizer import EdinburghEmbeddingsFeaturizer
@@ -52,7 +55,7 @@ class DailyDialogFeaturizer():
 
         return features
 
-def extract_features(sentences: List, corpus: List):
+def extract_features(sentences: List, corpus: List, out_file: str):
     # pre-process the corpus
     print("Pre-processing the corpus")
     pre_processed_corpus = list(map(lambda x: preprocess(x), corpus))
@@ -66,16 +69,40 @@ def extract_features(sentences: List, corpus: List):
     featurizer = DailyDialogFeaturizer(pre_processed_corpus)
     tokenizer = Tokenizer()
 
-    return featurizer.featurize(pre_processed_sentences, tokenizer=tokenizer)
+    features = featurizer.featurize(pre_processed_sentences, tokenizer=tokenizer)
+
+    save_features(features, out_file)
+
+    return features
+
+def save_features(features: Dict, out_file: str):
+    data = None
+    col_names = []
+    for name, vec in features.items():
+        v = np.array(vec)
+        if len(v.shape) == 1:
+            v = v.reshape((-1, 1))
+        for i in range(v.shape[1]):
+            col_names.append(name + '_' + str(i))
+        if data is not None:
+            data = np.concatenate((data, v), axis=1)
+        else:
+            data = v
+    print("Saving features with shape: ", data.shape)
+
+    df = pd.DataFrame(data, columns=col_names, index=None)
+    print("Saving dataframe to: ", out_file)
+    df.to_csv(out_file, index=False)
+    print("Saved")
 
 if __name__ == '__main__':
     train_utterances, train_emotions, _ = read_data_from_dir('./data/dailydialog', split="train")
     valid_utterances, valid_emotions, _ = read_data_from_dir('./data/dailydialog', split="validation")
     test_utterances, test_emotions, _ = read_data_from_dir('./data/dailydialog', split="test")
 
-    train_features = extract_features(train_utterances, corpus=train_utterances)
-    valid_features = extract_features(valid_utterances, corpus=train_utterances)
-    test_features = extract_features(test_utterances, corpus=train_utterances)
+    train_features = extract_features(train_utterances, corpus=train_utterances, out_file='./data/dailydialog/train_features.csv')
+    valid_features = extract_features(valid_utterances, corpus=train_utterances, out_file='./data/dailydialog/validation_features.csv')
+    test_features = extract_features(test_utterances, corpus=train_utterances, out_file='./data/dailydialog/test_features.csv')
 
     with open('./data/dailydialog/train_features.pkl', 'wb') as f:
         pickle.dump(train_features, f)
