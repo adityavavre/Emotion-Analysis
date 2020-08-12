@@ -40,11 +40,11 @@ class DailyDialogFeaturizer():
             "LIWC": LIWCFeaturizer()
         }
 
-    def featurize(self, text, tokenizer):
+    def featurize(self, sentences, tokenizer):
         features = {}
         for name, featurizer in self.featurizers.items():
             print("Starting %s feature extraction" % name)
-            temp = featurizer.featurize(text, tokenizer)
+            temp = featurizer.featurize(sentences, tokenizer)
             if isinstance(temp, Dict):
                 features.update(temp)
             else:
@@ -69,9 +69,19 @@ def extract_features(sentences: List, corpus: List):
     return featurizer.featurize(pre_processed_sentences, tokenizer=tokenizer)
 
 if __name__ == '__main__':
-    corpus, _, _ = read_data_from_dir('./data/dailydialog', split="train")
-    utterances, emotions, _ = read_data_from_dir('./data/dailydialog', split="test")
-    features = extract_features(utterances, corpus)
+    train_utterances, train_emotions, _ = read_data_from_dir('./data/dailydialog', split="train")
+    valid_utterances, valid_emotions, _ = read_data_from_dir('./data/dailydialog', split="validation")
+    test_utterances, test_emotions, _ = read_data_from_dir('./data/dailydialog', split="test")
 
-    with open('./data/dailydialog/features.pkl', 'wb') as f:
-        pickle.dump(features, f)
+    train_features = extract_features(train_utterances, corpus=train_utterances)
+    valid_features = extract_features(valid_utterances, corpus=train_utterances)
+    test_features = extract_features(test_utterances, corpus=train_utterances)
+
+    with open('./data/dailydialog/train_features.pkl', 'wb') as f:
+        pickle.dump(train_features, f)
+
+    with open('./data/dailydialog/validation_features.pkl', 'wb') as f:
+        pickle.dump(valid_features, f)
+
+    with open('./data/dailydialog/test_features.pkl', 'wb') as f:
+        pickle.dump(test_features, f)

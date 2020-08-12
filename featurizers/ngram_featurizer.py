@@ -19,5 +19,5 @@ class NgramFeaturizer():
         print("Fit done")
 
     def featurize(self, sentences: List, tokenizer):
-        print("Extracting word n-grams vector feature")
+        # print("Extracting word n-grams vector feature")
         return self.vectorizer.transform(sentences).toarray()

@@ -27,7 +27,7 @@ class POSCountFeaturizer():
         return cnt
 
     def featurize(self, sentences: List, tokenizer):
-        print("Extracting POS counts features")
+        # print("Extracting POS counts features")
         counts = {}
 
         counts['noun_count'] = list(map(lambda x: self.check_pos_tag(x, 'noun'), sentences))

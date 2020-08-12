@@ -7,7 +7,7 @@ class GloveFeaturizer():
     def __init__(self, embedding_dim: int = 50):
         self.embeddings_dict = {}
         self.embedding_dim = embedding_dim
-        print("Using embedding dim: ", embedding_dim)
+        print("Using GloVe embedding dim: ", embedding_dim)
 
         embedding_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                       "data/glove/glove.6B.{dim}d.txt".format(dim=self.embedding_dim))
@@ -21,7 +21,7 @@ class GloveFeaturizer():
 
     def featurize(self, sentences: List, tokenizer):
         features = []
-        print("Collecting avg. sentence embeddings from GloVe")
+        # print("Collecting avg. sentence embeddings from GloVe")
         for sent in sentences:
             tokenize_word = tokenizer.tokenize(sent)
             vec = np.array([0.] * self.embedding_dim, dtype='float32')
