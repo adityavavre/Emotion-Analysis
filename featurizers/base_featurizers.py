@@ -98,7 +98,10 @@ class EmbeddingFeaturizer(Featurizer):
                 if token in self.embedding_map:
                     sum_vec = sum_vec + self.embedding_map[token]
             denom = len(tokens)
-            sum_vec = sum_vec / denom
+            if denom != 0:
+                sum_vec = sum_vec / denom
+            else:
+                sum_vec = np.zeros(shape=(self.dim,))
             features.append(sum_vec)
         return features
 
