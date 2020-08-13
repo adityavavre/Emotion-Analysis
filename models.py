@@ -8,10 +8,41 @@ import json
 
 import pandas as pd
 import numpy as np
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score
+from xgboost import XGBClassifier
+from sklearn.metrics import classification_report, accuracy_score, log_loss
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import ParameterGrid
 
 from utils import read_data_from_dir
+
+
+def grid_search(model, X_train, Y_train, X_valid, Y_valid, params):
+    print("Executing GridSearch over params: ", params)
+    best_params = None
+    best_loss = np.inf
+    for param in ParameterGrid(params):
+        print("Fitting with params: ", param)
+        model = model.set_params(param)
+        model = model.fit(X_train, Y_train)
+        Y_pred = model.predict_proba(X_valid)
+        loss = log_loss(Y_valid, Y_pred)
+        print("Loss: ", loss)
+        if loss < best_loss:
+            print("Found better param")
+            best_params = param
+            best_loss = loss
+    print("Completed grid search")
+
+    ## fit the model again with best params and return
+    print("Fitting model with best params found")
+    model = model.set_params(best_params)
+    model = model.fit(X_train, Y_train)
+    print("Fit done")
+    return model, best_params
+
 
 def get_report(model, X, Y_true, labels: List, split: str):
     Y_pred_proba = model.predict_proba(X)
@@ -23,16 +54,16 @@ def get_report(model, X, Y_true, labels: List, split: str):
     return report, acc
 
 def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels):
-    print("Setting model params: ", params)
-    model = model.set_params(**params)
-    print("Starting fit")
+    # print("Setting model params: ", params)
+    # model = model.set_params(**params)
+    # print("Starting fit")
     start_time = time.time()
 
-    model = model.fit(X_train, Y_train)
+    model, best_params = grid_search(model, X_train, Y_train, X_valid, Y_valid, params)
 
     duration = time.time() - start_time
-    print("Fit done")
-    print("Total training time: %s seconds", duration)
+    # print("Fit done")
+    print("Total time taken: %s seconds" % duration)
 
     train_report, train_acc = get_report(model, X_train, Y_train, labels=labels, split="Train")
 
@@ -46,7 +77,8 @@ def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, param
         "validation_accuracy": valid_acc,
         "validation_report": valid_report,
         "test_accuracy": test_acc,
-        "test_report": test_report
+        "test_report": test_report,
+        "best_params": best_params
     }
 
     return model, final_report
@@ -59,6 +91,8 @@ def run_models(models_list: List,
                params_list: List,
                labels: List,
                out_dir: str):
+    assert len(models_list) == len(models_names) and len(models_list) == len(params_list), \
+        "The models, names and params list must have the same length"
 
     for name, model, params in zip(models_names, models_list, params_list):
         print("Executing model: ", name)
@@ -112,9 +146,36 @@ if __name__ == '__main__':
 
     Y_train, Y_valid, Y_test = np.array(Y_train), np.array(Y_valid), np.array(Y_test)
 
-    models = [LogisticRegression()]
-    models_names = ['logistic_regression']
-    params_list = [{'verbose': False, 'max_iter': 1e8}]
+    # models = [LogisticRegression()]
+    models = [DecisionTreeClassifier(), RandomForestClassifier(),
+              XGBClassifier(), AdaBoostClassifier()]
+    # models_names = ['logistic_regression']
+    models_names = ["decision_tree", "lda", "qda", "random_forest", "xgb", "adaboost"]
+    # params_list = [{'verbose': False, 'max_iter': 1e8}]
+    params_list = [
+        {
+            "max_depth": [ 5, 8],
+            "min_samples_leaf": [10, 15]
+        },
+        {
+            "n_estimators": [200, 400],
+            "max_depth": [4, 7],
+            "min_samples_leaf": [5, 7]
+        },
+        {
+            "learning_rate": [0.1, 0.01],
+            "n_estimators": [200, 400],
+            "max_depth": [4, 7]
+        },
+        {
+            "base_estimator": [DecisionTreeClassifier(max_depth=8,
+                                                    min_samples_leaf=6),
+                               DecisionTreeClassifier(max_depth=10,
+                                                    min_samples_leaf=8)],
+            "n_estimators": [50, 100],
+            "learning_rate": [0.01, 0.1]
+        }
+    ]
 
     run_models(models,
                models_names,
