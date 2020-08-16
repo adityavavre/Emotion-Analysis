@@ -363,12 +363,13 @@ if __name__ == '__main__':
     labels = ["no emotion", "anger", "disgust", "fear", "happiness", "sadness", "surprise"]
     label2id = {v: i for i, v in enumerate(labels)}
     id2label = {i: v for i, v in enumerate(labels)}
-    model = EmotionClassifier(model_dir, len(labels))
 
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
 
     if do_train:
+        model = EmotionClassifier(model_dir, len(labels))
         analyser = EmotionAnalyser(model, device)
 
         MAX_LEN = 64
@@ -400,11 +401,14 @@ if __name__ == '__main__':
         df_out.to_csv('./predictions/test_pred.csv', index=False)
 
     else:
-        pass
-        # MAX_LEN = 256
+        MAX_LEN = 64
+        BATCH_SIZE = 32
+        model  = torch.load(model_dir)
         # model.load_state_dict(torch.load('./finetuned_bert/best_model_state.bin'))
-        # analyzer = SentimentAnalyzer(model)
-        #
-        # pred = analyzer.predict(summary, tokenizer, MAX_LEN, id2label)
-        # print("Prediction: ", pred)
+        analyzer = EmotionAnalyser(model, device)
+
+        test_data_loader, test_num_examples = create_data_loader(data_dir, "test", tokenizer, max_len=MAX_LEN,
+                                                                 batch_size=BATCH_SIZE)
+
+        utterances, predictions, prediction_probs, real_values = analyzer.get_predictions(test_data_loader, id2label)
     exit(0)

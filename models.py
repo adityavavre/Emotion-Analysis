@@ -8,7 +8,6 @@ import json
 
 import pandas as pd
 import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
@@ -25,7 +24,7 @@ def grid_search(model, X_train, Y_train, X_valid, Y_valid, params):
     best_loss = np.inf
     for param in ParameterGrid(params):
         print("Fitting with params: ", param)
-        model = model.set_params(param)
+        model = model.set_params(**param)
         model = model.fit(X_train, Y_train)
         Y_pred = model.predict_proba(X_valid)
         loss = log_loss(Y_valid, Y_pred)
@@ -38,7 +37,7 @@ def grid_search(model, X_train, Y_train, X_valid, Y_valid, params):
 
     ## fit the model again with best params and return
     print("Fitting model with best params found")
-    model = model.set_params(best_params)
+    model = model.set_params(**best_params)
     model = model.fit(X_train, Y_train)
     print("Fit done")
     return model, best_params
@@ -146,27 +145,39 @@ if __name__ == '__main__':
 
     Y_train, Y_valid, Y_test = np.array(Y_train), np.array(Y_valid), np.array(Y_test)
 
-    # models = [LogisticRegression()]
-    models = [DecisionTreeClassifier(), RandomForestClassifier(),
-              XGBClassifier(), AdaBoostClassifier()]
-    # models_names = ['logistic_regression']
-    models_names = ["decision_tree", "lda", "qda", "random_forest", "xgb", "adaboost"]
-    # params_list = [{'verbose': False, 'max_iter': 1e8}]
+    models = [
+        # LogisticRegression(),
+        # DecisionTreeClassifier(),
+        # RandomForestClassifier(),
+        # XGBClassifier(),
+        AdaBoostClassifier()
+    ]
+    models_names = [
+        # 'logistic_regression',
+        # "decision_tree",
+        # "random_forest",
+        # "xgb",
+        "adaboost"
+    ]
+    # params_list = []
     params_list = [
-        {
-            "max_depth": [ 5, 8],
-            "min_samples_leaf": [10, 15]
-        },
-        {
-            "n_estimators": [200, 400],
-            "max_depth": [4, 7],
-            "min_samples_leaf": [5, 7]
-        },
-        {
-            "learning_rate": [0.1, 0.01],
-            "n_estimators": [200, 400],
-            "max_depth": [4, 7]
-        },
+        # {
+        #     'verbose': False, 'max_iter': 1e8
+        # },
+        # {
+        #     "max_depth": [ 5, 8],
+        #     "min_samples_leaf": [10, 15]
+        # },
+        # {
+        #     "n_estimators": [200, 400],
+        #     "max_depth": [4, 7],
+        #     "min_samples_leaf": [5, 7]
+        # },
+        # {
+        #     "learning_rate": [0.1, 0.01],
+        #     "n_estimators": [200, 400],
+        #     "max_depth": [4, 7]
+        # },
         {
             "base_estimator": [DecisionTreeClassifier(max_depth=8,
                                                     min_samples_leaf=6),
