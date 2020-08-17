@@ -1,8 +1,10 @@
+import csv
 import os
 import numpy as np
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 from num2words import num2words
+import pandas as pd
 
 def read_data_from_dir(in_dir: str, split: str):
     """
@@ -43,7 +45,7 @@ def read_data_from_dir(in_dir: str, split: str):
         emo_len = len(emos)
         act_len = len(acts)
         if seq_len != emo_len or seq_len != act_len:
-            print("Different turns btw dialogue & emotion & acttion! ",
+            print("Different turns btw dialogue & emotion & action! ",
                   line_count + 1, seq_len, emo_len, act_len)
             continue
 
@@ -57,6 +59,31 @@ def read_data_from_dir(in_dir: str, split: str):
 
     return utterances, emotions, act_annotations
 
+def read_meld_data(in_dir: str, split: str):
+    """
+
+    :param in_dir:
+    :param split:
+    :return:
+    """
+    if split not in ("train", "test", "dev"):
+        raise Exception("Not a valid split. Must be one of `train`, `test` or `dev`")
+
+    labels = ["neutral", "anger", "disgust", "fear", "joy", "sadness", "surprise"]
+    label2id = {v: i for i, v in enumerate(labels)}
+
+    data_file = os.path.join(in_dir, split+"_sent_emo.csv")
+    df = pd.read_csv(data_file, encoding='utf-8', error_bad_lines=False)
+
+    utterances = list(df['Utterance'])
+    utterances = list(map(lambda x: x.encode('ascii', 'ignore').decode('utf-8'), utterances))
+    emotions = list(df['Emotion'])
+    emotions = list(map(lambda x: label2id[x], emotions))
+
+    assert len(utterances) == len(emotions), "Length of utterances do not match length of emotions"
+    print("Number of examples in " + split + " set: ", len(utterances))
+
+    return utterances, emotions
 
 def convert_lower_case(data):
     return np.char.lower(data)
@@ -108,8 +135,8 @@ def preprocess(data):
     data = remove_apostrophe(data)
     data = convert_numbers(data)
     data = remove_punctuation(data)
-    data = convert_numbers(data)
-    data = remove_punctuation(data)
+    # data = convert_numbers(data)
+    # data = remove_punctuation(data)
     return str(data)
 
 class Tokenizer():
@@ -119,7 +146,11 @@ class Tokenizer():
         return self.tokenizer(x)
 
 if __name__ == '__main__':
-    a, b, c = read_data_from_dir('./data/dailydialog/', 'train')
-    print(a[:2])
-    print(b[:2])
-    print(c[:2])
+    # a, b, c = read_data_from_dir('./data/dailydialog/', 'train')
+    # print(a[:2])
+    # print(b[:2])
+    # print(c[:2])
+
+    ut, em = read_meld_data('./data/meld', 'train')
+    print(ut[:2])
+    print(em[:2])

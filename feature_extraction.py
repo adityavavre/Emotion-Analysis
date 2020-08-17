@@ -20,7 +20,7 @@ from featurizers.senti_wordnet_featurizer import SentiWordNetFeaturizer
 from featurizers.sentiment140_featurizer import Sentiment140Featurizer
 from featurizers.tf_idf_featurizer import TfIdfFeaturizer
 from utils import Tokenizer
-from utils import preprocess, read_data_from_dir
+from utils import preprocess, read_data_from_dir, read_meld_data
 
 
 class DailyDialogFeaturizer():
@@ -55,7 +55,7 @@ class DailyDialogFeaturizer():
 
         return features
 
-def extract_features(sentences: List, corpus: List, out_file: str):
+def extract_features(sentences: List, emotions: List, corpus: List, out_file: str):
     # pre-process the corpus
     print("Pre-processing the corpus")
     pre_processed_corpus = list(map(lambda x: preprocess(x), corpus))
@@ -70,6 +70,8 @@ def extract_features(sentences: List, corpus: List, out_file: str):
     tokenizer = Tokenizer()
 
     features = featurizer.featurize(pre_processed_sentences, tokenizer=tokenizer)
+
+    features["emotions"] = emotions
 
     save_features(features, out_file)
 
@@ -100,9 +102,23 @@ if __name__ == '__main__':
     valid_utterances, valid_emotions, _ = read_data_from_dir('./data/dailydialog', split="validation")
     test_utterances, test_emotions, _ = read_data_from_dir('./data/dailydialog', split="test")
 
-    train_features = extract_features(train_utterances, corpus=train_utterances, out_file='./data/dailydialog/train_features.csv')
-    valid_features = extract_features(valid_utterances, corpus=train_utterances, out_file='./data/dailydialog/validation_features.csv')
-    test_features = extract_features(test_utterances, corpus=train_utterances, out_file='./data/dailydialog/test_features.csv')
+    meld_train_utterances, meld_train_emotions = read_meld_data('./data/meld', split="train")
+    meld_valid_utterances, meld_valid_emotions = read_meld_data('./data/meld', split="dev")
+    meld_test_utterances, meld_test_emotions = read_meld_data('./data/meld', split="test")
+
+    train_utterances.extend(meld_train_utterances)
+    train_emotions.extend(meld_train_emotions)
+    valid_utterances.extend(meld_valid_utterances)
+    valid_emotions.extend(meld_valid_emotions)
+    test_utterances.extend(meld_test_utterances)
+    test_emotions.extend(meld_test_emotions)
+
+    train_features = extract_features(train_utterances, emotions=train_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/train_features.csv')
+    valid_features = extract_features(valid_utterances, emotions=valid_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/validation_features.csv')
+    test_features = extract_features(test_utterances, emotions=test_emotions, corpus=train_utterances,
+                                     out_file='./data/dailydialog/test_features.csv')
 
     with open('./data/dailydialog/train_features.pkl', 'wb') as f:
         pickle.dump(train_features, f)

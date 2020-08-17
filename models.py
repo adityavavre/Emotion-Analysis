@@ -135,13 +135,23 @@ if __name__ == '__main__':
     valid_file = os.path.join(data_dir, 'validation_features.csv')
     test_file = os.path.join(data_dir, 'test_features.csv')
 
-    X_train = pd.read_csv(train_file, skiprows=0).to_numpy()
-    X_valid = pd.read_csv(valid_file, skiprows=0).to_numpy()
-    X_test = pd.read_csv(test_file, skiprows=0).to_numpy()
+    X_train = pd.read_csv(train_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
+    X_valid = pd.read_csv(valid_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
+    X_test = pd.read_csv(test_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
 
-    _, Y_train, _ = read_data_from_dir('./data/dailydialog', split="train")
-    _, Y_valid, _ = read_data_from_dir('./data/dailydialog', split="validation")
-    _, Y_test, _ = read_data_from_dir('./data/dailydialog', split="test")
+    Y_train = pd.read_csv(train_file, skiprows=0, usecols=["emotions"]).to_numpy()
+    Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions"]).to_numpy()
+    Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions"]).to_numpy()
+
+    print(X_test.shape)
+    print(X_test)
+
+    print(Y_test.shape)
+    print(Y_test)
+    exit()
+    # _, Y_train, _ = read_data_from_dir('./data/dailydialog', split="train")
+    # _, Y_valid, _ = read_data_from_dir('./data/dailydialog', split="validation")
+    # _, Y_test, _ = read_data_from_dir('./data/dailydialog', split="test")
 
     Y_train, Y_valid, Y_test = np.array(Y_train), np.array(Y_valid), np.array(Y_test)
 
