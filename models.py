@@ -137,9 +137,9 @@ if __name__ == '__main__':
     X_valid = pd.read_csv(valid_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
     X_test = pd.read_csv(test_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
 
-    Y_train = pd.read_csv(train_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
-    Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
-    Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
+    Y_train = pd.read_csv(train_file, skiprows=0, usecols=["emotions_0"]).to_numpy().flatten()
+    Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions_0"]).to_numpy().flatten()
+    Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions_0"]).to_numpy().flatten()
 
     models = [
         # LogisticRegression(),
