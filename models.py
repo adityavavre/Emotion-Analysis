@@ -15,8 +15,6 @@ from sklearn.metrics import classification_report, accuracy_score, log_loss
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import ParameterGrid
 
-from utils import read_data_from_dir
-
 
 def grid_search(model, X_train, Y_train, X_valid, Y_valid, params):
     print("Executing GridSearch over params: ", params)
@@ -135,39 +133,27 @@ if __name__ == '__main__':
     valid_file = os.path.join(data_dir, 'validation_features.csv')
     test_file = os.path.join(data_dir, 'test_features.csv')
 
-    X_train = pd.read_csv(train_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
-    X_valid = pd.read_csv(valid_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
-    X_test = pd.read_csv(test_file, skiprows=0, usecols=lambda col: col not in ["emotions"]).to_numpy()
+    X_train = pd.read_csv(train_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
+    X_valid = pd.read_csv(valid_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
+    X_test = pd.read_csv(test_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
 
-    Y_train = pd.read_csv(train_file, skiprows=0, usecols=["emotions"]).to_numpy()
-    Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions"]).to_numpy()
-    Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions"]).to_numpy()
-
-    print(X_test.shape)
-    print(X_test)
-
-    print(Y_test.shape)
-    print(Y_test)
-    exit()
-    # _, Y_train, _ = read_data_from_dir('./data/dailydialog', split="train")
-    # _, Y_valid, _ = read_data_from_dir('./data/dailydialog', split="validation")
-    # _, Y_test, _ = read_data_from_dir('./data/dailydialog', split="test")
-
-    Y_train, Y_valid, Y_test = np.array(Y_train), np.array(Y_valid), np.array(Y_test)
+    Y_train = pd.read_csv(train_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
+    Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
+    Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions_0"]).to_numpy()
 
     models = [
         # LogisticRegression(),
         # DecisionTreeClassifier(),
-        # RandomForestClassifier(),
+        RandomForestClassifier(),
         # XGBClassifier(),
-        AdaBoostClassifier()
+        # AdaBoostClassifier()
     ]
     models_names = [
         # 'logistic_regression',
         # "decision_tree",
-        # "random_forest",
+        "random_forest",
         # "xgb",
-        "adaboost"
+        # "adaboost"
     ]
     # params_list = []
     params_list = [
@@ -178,24 +164,24 @@ if __name__ == '__main__':
         #     "max_depth": [ 5, 8],
         #     "min_samples_leaf": [10, 15]
         # },
-        # {
-        #     "n_estimators": [200, 400],
-        #     "max_depth": [4, 7],
-        #     "min_samples_leaf": [5, 7]
-        # },
+        {
+            "n_estimators": [400],
+            "max_depth": [7, 8],
+            "min_samples_leaf": [7]
+        },
         # {
         #     "learning_rate": [0.1, 0.01],
         #     "n_estimators": [200, 400],
         #     "max_depth": [4, 7]
         # },
-        {
-            "base_estimator": [DecisionTreeClassifier(max_depth=8,
-                                                    min_samples_leaf=6),
-                               DecisionTreeClassifier(max_depth=10,
-                                                    min_samples_leaf=8)],
-            "n_estimators": [50, 100],
-            "learning_rate": [0.01, 0.1]
-        }
+        # {
+        #     "base_estimator": [DecisionTreeClassifier(max_depth=8,
+        #                                             min_samples_leaf=6),
+        #                        DecisionTreeClassifier(max_depth=10,
+        #                                             min_samples_leaf=8)],
+        #     "n_estimators": [50, 100],
+        #     "learning_rate": [0.01, 0.1]
+        # }
     ]
 
     run_models(models,
