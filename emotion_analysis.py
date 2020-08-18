@@ -2,7 +2,7 @@ import argparse
 import os
 from collections import defaultdict
 from typing import List, Dict, Tuple
-from utils import read_data_from_dir
+from utils import read_data_from_dir, read_meld_data
 import logging
 
 import numpy as np
@@ -58,7 +58,23 @@ def create_data_loader(data_dir: str,
                        tokenizer: PreTrainedTokenizer,
                        max_len: int,
                        batch_size: int) -> Tuple[DataLoader, int]:
-    utterances, emotions, _ = read_data_from_dir(data_dir, split=split)
+    """
+
+    :param data_dir:
+    :param split:
+    :param tokenizer:
+    :param max_len:
+    :param batch_size:
+    :return:
+    """
+    utterances, emotions, _ = read_data_from_dir(os.path.join(data_dir, 'dailydialog'), split=split)
+    meld_utterances, meld_emotions = read_meld_data(
+        os.path.join(data_dir, 'meld'),
+        split="dev" if split=="validation" else split)
+
+    utterances.extend(meld_utterances)
+    emotions.extend(meld_emotions)
+
     ds = DailyDialogDataset(
         utterances=utterances,
         targets=emotions,
