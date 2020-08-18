@@ -123,10 +123,12 @@ def run_models(models_list: List,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Argument parser for regressors")
-    # parser.add_argument('-m', '--model', action="store", dest="model", type=str, required=True)
+    parser.add_argument('-m', '--model', action="store", dest="model", type=str, required=False)
     parser.add_argument('-d', '--data', action="store", dest="data", type=str, required=True)
-    parser.add_argument('-o', '--out_dir', action="store", dest="out_dir", type=str, required=True)
+    parser.add_argument('-o', '--out_dir', action="store", dest="out_dir", type=str, required=False)
     parser.add_argument('-t', '--train', default=False, dest="train", action='store_true')
+    parser.add_argument('-c', '--combined', default=False, dest="combined", action='store_true')
+
 
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -135,18 +137,23 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    # model = args.model
+    model = args.model
     data_dir = args.data
     do_train = args.train
     out_dir = args.out_dir
-    os.makedirs(out_dir, exist_ok=True)
+    use_combined = args.combined
 
     # labels specified in the dataset in the given order
     labels = ["no emotion", "anger", "disgust", "fear", "happiness", "sadness", "surprise"]
 
-    train_file = os.path.join(data_dir, 'train_features.csv')
-    valid_file = os.path.join(data_dir, 'validation_features.csv')
-    test_file = os.path.join(data_dir, 'test_features.csv')
+    if use_combined:
+        train_file = os.path.join(data_dir, 'train_features_combined.csv')
+        valid_file = os.path.join(data_dir, 'validation_features_combined.csv')
+        test_file = os.path.join(data_dir, 'test_features_combined.csv')
+    else:
+        train_file = os.path.join(data_dir, 'train_features.csv')
+        valid_file = os.path.join(data_dir, 'validation_features.csv')
+        test_file = os.path.join(data_dir, 'test_features.csv')
 
     X_train = pd.read_csv(train_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
     X_valid = pd.read_csv(valid_file, skiprows=0, usecols=lambda col: col not in ["emotions_0"]).to_numpy()
@@ -156,54 +163,69 @@ if __name__ == '__main__':
     Y_valid = pd.read_csv(valid_file, skiprows=0, usecols=["emotions_0"]).to_numpy().flatten()
     Y_test = pd.read_csv(test_file, skiprows=0, usecols=["emotions_0"]).to_numpy().flatten()
 
-    models = [
-        # LogisticRegression(),
-        # DecisionTreeClassifier(),
-        # RandomForestClassifier(),
-        XGBClassifier(),
-        AdaBoostClassifier()
-    ]
-    models_names = [
-        # 'logistic_regression',
-        # "decision_tree",
-        # "random_forest",
-        "xgb",
-        "adaboost"
-    ]
-    # params_list = []
-    params_list = [
-        # {
-        #     'verbose': False, 'max_iter': 1e8
-        # },
-        # {
-        #     "max_depth": [5, 8],
-        #     "min_samples_leaf": [10, 15]
-        # },
-        # {
-        #     "n_estimators": [400],
-        #     "max_depth": [5, 7, 9],
-        #     "min_samples_leaf": [7, 12]
-        # },
-        {
-            "learning_rate": [0.1],
-            "n_estimators": [200, 400],
-            "max_depth": [4, 7]
-        },
-        {
-            "base_estimator": [DecisionTreeClassifier(max_depth=8,
-                                                    min_samples_leaf=6),
-                               DecisionTreeClassifier(max_depth=10,
-                                                    min_samples_leaf=8)],
-            "n_estimators": [50, 100],
-            "learning_rate": [0.01]
-        }
-    ]
+    if do_train:
+        if out_dir is None:
+            print("Need output directory to store trained models")
+            exit(0)
 
-    run_models(models,
-               models_names,
-               X_train, Y_train,
-               X_valid, Y_valid,
-               X_test, Y_test,
-               params_list=params_list,
-               labels=labels,
-               out_dir=out_dir)
+        os.makedirs(out_dir, exist_ok=True)
+        models = [
+            # LogisticRegression(),
+            # DecisionTreeClassifier(),
+            # RandomForestClassifier(),
+            XGBClassifier(),
+            # AdaBoostClassifier()
+        ]
+        models_names = [
+            # 'logistic_regression',
+            # "decision_tree",
+            # "random_forest",
+            "xgb",
+            # "adaboost"
+        ]
+        # params_list = []
+        params_list = [
+            # {
+            #     'verbose': False, 'max_iter': 1e8
+            # },
+            # {
+            #     "max_depth": [5, 8],
+            #     "min_samples_leaf": [10, 15]
+            # },
+            # {
+            #     "n_estimators": [400],
+            #     "max_depth": [5, 7, 9],
+            #     "min_samples_leaf": [7, 12]
+            # },
+            {
+                "learning_rate": [0.1],
+                "n_estimators": [400, 500],
+                "max_depth": [3, 4]
+            },
+            # {
+            #     "base_estimator": [DecisionTreeClassifier(max_depth=8,
+            #                                             min_samples_leaf=6),
+            #                        DecisionTreeClassifier(max_depth=10,
+            #                                             min_samples_leaf=8)],
+            #     "n_estimators": [50, 100],
+            #     "learning_rate": [0.01]
+            # }
+        ]
+
+        run_models(models,
+                   models_names,
+                   X_train, Y_train,
+                   X_valid, Y_valid,
+                   X_test, Y_test,
+                   params_list=params_list,
+                   labels=labels,
+                   out_dir=out_dir)
+    else:
+        if model is None:
+            print("Need model path")
+            exit(0)
+
+        with open(model, 'rb') as f:
+            model = pickle.load(f)
+        test_report, test_acc, test_cm = get_report(model, X_test, Y_test, labels=labels, split="Test")
+        print("Confusion matrix: \n", test_cm)
