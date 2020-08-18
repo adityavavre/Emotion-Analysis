@@ -57,7 +57,8 @@ def create_data_loader(data_dir: str,
                        split: str,
                        tokenizer: PreTrainedTokenizer,
                        max_len: int,
-                       batch_size: int) -> Tuple[DataLoader, int]:
+                       batch_size: int,
+                       combined: bool = False) -> Tuple[DataLoader, int]:
     """
 
     :param data_dir:
@@ -68,12 +69,13 @@ def create_data_loader(data_dir: str,
     :return:
     """
     utterances, emotions, _ = read_data_from_dir(os.path.join(data_dir, 'dailydialog'), split=split)
-    meld_utterances, meld_emotions = read_meld_data(
-        os.path.join(data_dir, 'meld'),
-        split="dev" if split=="validation" else split)
+    if combined:
+        meld_utterances, meld_emotions = read_meld_data(
+            os.path.join(data_dir, 'meld'),
+            split="dev" if split=="validation" else split)
 
-    utterances.extend(meld_utterances)
-    emotions.extend(meld_emotions)
+        utterances.extend(meld_utterances)
+        emotions.extend(meld_emotions)
 
     ds = DailyDialogDataset(
         utterances=utterances,
@@ -393,11 +395,33 @@ if __name__ == '__main__':
         EPOCHS = 10
         LEARNING_RATE = 2e-5
 
-        train_data_loader, train_num_examples = create_data_loader(data_dir, "train", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
-        val_data_loader, val_num_examples = create_data_loader(data_dir, "validation", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
-        test_data_loader, test_num_examples = create_data_loader(data_dir, "test", tokenizer, max_len=MAX_LEN, batch_size=BATCH_SIZE)
+        train_data_loader, train_num_examples = create_data_loader(data_dir,
+                                                                   "train",
+                                                                   tokenizer,
+                                                                   max_len=MAX_LEN,
+                                                                   batch_size=BATCH_SIZE,
+                                                                   combined=True)
 
-        analyser.train(train_data_loader, train_num_examples, val_data_loader, val_num_examples, num_epochs=EPOCHS, lr=LEARNING_RATE)
+        val_data_loader, val_num_examples = create_data_loader(data_dir,
+                                                               "validation",
+                                                               tokenizer,
+                                                               max_len=MAX_LEN,
+                                                               batch_size=BATCH_SIZE,
+                                                               combined=True)
+
+        test_data_loader, test_num_examples = create_data_loader(data_dir,
+                                                                 "test",
+                                                                 tokenizer,
+                                                                 max_len=MAX_LEN,
+                                                                 batch_size=BATCH_SIZE,
+                                                                 combined=True)
+
+        analyser.train(train_data_loader,
+                       train_num_examples,
+                       val_data_loader,
+                       val_num_examples,
+                       num_epochs=EPOCHS,
+                       lr=LEARNING_RATE)
 
         ## predictions on test set
         utterances, predictions, prediction_probs, real_values = analyser.get_predictions(test_data_loader, id2label)
@@ -423,8 +447,12 @@ if __name__ == '__main__':
         # model.load_state_dict(torch.load('./finetuned_bert/best_model_state.bin'))
         analyzer = EmotionAnalyser(model, device)
 
-        test_data_loader, test_num_examples = create_data_loader(data_dir, "test", tokenizer, max_len=MAX_LEN,
-                                                                 batch_size=BATCH_SIZE)
+        test_data_loader, test_num_examples = create_data_loader(data_dir,
+                                                                 "test",
+                                                                 tokenizer,
+                                                                 max_len=MAX_LEN,
+                                                                 batch_size=BATCH_SIZE,
+                                                                 combined=False)
 
         utterances, predictions, prediction_probs, real_values = analyzer.get_predictions(test_data_loader, id2label)
     exit(0)
