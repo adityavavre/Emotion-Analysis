@@ -12,3 +12,8 @@ mv ./data/ijcnlp_dailydialog ./data/dailydialog
 unzip ./data/dailydialog/train.zip -d ./data/dailydialog/
 unzip ./data/dailydialog/validation.zip -d ./data/dailydialog/
 unzip ./data/dailydialog/test.zip -d ./data/dailydialog/
+
+mkdir -p ./data/meld/
+wget https://github.com/declare-lab/MELD/raw/master/data/MELD/dev_sent_emo.csv -O ./data/meld/dev_sent_emo.csv
+wget https://github.com/declare-lab/MELD/raw/master/data/MELD/test_sent_emo.csv -O ./data/meld/test_sent_emo.csv
+wget https://github.com/declare-lab/MELD/raw/master/data/MELD/train_sent_emo.csv -O ./data/meld/train_sent_emo.csv
