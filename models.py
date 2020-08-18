@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
-from sklearn.metrics import classification_report, accuracy_score, log_loss
+from sklearn.metrics import classification_report, accuracy_score, log_loss, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import ParameterGrid
 
@@ -38,6 +38,9 @@ def grid_search(model, X_train, Y_train, X_valid, Y_valid, params):
     model = model.set_params(**best_params)
     model = model.fit(X_train, Y_train)
     print("Fit done")
+    if isinstance(model, AdaBoostClassifier):
+        best_params["base_estimator"] = best_params["base_estimator"].get_params()
+
     return model, best_params
 
 
@@ -48,7 +51,8 @@ def get_report(model, X, Y_true, labels: List, split: str):
     acc = accuracy_score(Y_true, Y_pred)
     print(split+" accuracy: ", acc)
     print(classification_report(Y_true, Y_pred, target_names=labels))
-    return report, acc
+    confusion_mat = confusion_matrix(Y_true, Y_pred, labels=[i for i in range(len(labels))])
+    return report, acc, confusion_mat
 
 def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels):
     # print("Setting model params: ", params)
@@ -62,11 +66,11 @@ def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, param
     # print("Fit done")
     print("Total time taken: %s seconds" % duration)
 
-    train_report, train_acc = get_report(model, X_train, Y_train, labels=labels, split="Train")
+    train_report, train_acc, train_cm = get_report(model, X_train, Y_train, labels=labels, split="Train")
 
-    valid_report, valid_acc = get_report(model, X_valid, Y_valid, labels=labels, split="Validation")
+    valid_report, valid_acc, valid_cm = get_report(model, X_valid, Y_valid, labels=labels, split="Validation")
 
-    test_report, test_acc = get_report(model, X_test, Y_test, labels=labels, split="Test")
+    test_report, test_acc, test_cm = get_report(model, X_test, Y_test, labels=labels, split="Test")
 
     final_report = {
         "train_accuracy": train_acc,
@@ -78,7 +82,13 @@ def train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, param
         "best_params": best_params
     }
 
-    return model, final_report
+    confusion_mats = {
+        "train": train_cm,
+        "valid": valid_cm,
+        "test": test_cm
+    }
+
+    return model, final_report, confusion_mats
 
 def run_models(models_list: List,
                models_names: List[str],
@@ -93,10 +103,11 @@ def run_models(models_list: List,
 
     for name, model, params in zip(models_names, models_list, params_list):
         print("Executing model: ", name)
-        trained_model, report = train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels)
+        trained_model, report, confusion_mats = train_model(model, X_train, Y_train, X_valid, Y_valid, X_test, Y_test, params, labels)
         os.makedirs(os.path.join(out_dir, name), exist_ok=True)
         model_path = os.path.join(out_dir, name, 'model.pkl')
         report_file = os.path.join(out_dir, name, 'report.json')
+        confusion_mats_file = os.path.join(out_dir, name, 'confusion_mats.pkl')
 
         print("Saving trained model to: ", model_path)
         with open(model_path, 'wb') as f:
@@ -105,6 +116,10 @@ def run_models(models_list: List,
         print("Saving training report to: ", report_file)
         with open(report_file, 'w') as f:
             json.dump(report, f)
+
+        print("Saving confusion matrices to: ", confusion_mats_file)
+        with open(confusion_mats_file, 'wb') as f:
+            pickle.dump(confusion_mats, f)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Argument parser for regressors")
@@ -144,16 +159,16 @@ if __name__ == '__main__':
     models = [
         # LogisticRegression(),
         # DecisionTreeClassifier(),
-        RandomForestClassifier(),
-        # XGBClassifier(),
-        # AdaBoostClassifier()
+        # RandomForestClassifier(),
+        XGBClassifier(),
+        AdaBoostClassifier()
     ]
     models_names = [
         # 'logistic_regression',
         # "decision_tree",
-        "random_forest",
-        # "xgb",
-        # "adaboost"
+        # "random_forest",
+        "xgb",
+        "adaboost"
     ]
     # params_list = []
     params_list = [
@@ -161,27 +176,27 @@ if __name__ == '__main__':
         #     'verbose': False, 'max_iter': 1e8
         # },
         # {
-        #     "max_depth": [ 5, 8],
+        #     "max_depth": [5, 8],
         #     "min_samples_leaf": [10, 15]
         # },
-        {
-            "n_estimators": [400],
-            "max_depth": [7, 8],
-            "min_samples_leaf": [7]
-        },
         # {
-        #     "learning_rate": [0.1, 0.01],
-        #     "n_estimators": [200, 400],
-        #     "max_depth": [4, 7]
+        #     "n_estimators": [400],
+        #     "max_depth": [5, 7, 9],
+        #     "min_samples_leaf": [7, 12]
         # },
-        # {
-        #     "base_estimator": [DecisionTreeClassifier(max_depth=8,
-        #                                             min_samples_leaf=6),
-        #                        DecisionTreeClassifier(max_depth=10,
-        #                                             min_samples_leaf=8)],
-        #     "n_estimators": [50, 100],
-        #     "learning_rate": [0.01, 0.1]
-        # }
+        {
+            "learning_rate": [0.1],
+            "n_estimators": [200, 400],
+            "max_depth": [4, 7]
+        },
+        {
+            "base_estimator": [DecisionTreeClassifier(max_depth=8,
+                                                    min_samples_leaf=6),
+                               DecisionTreeClassifier(max_depth=10,
+                                                    min_samples_leaf=8)],
+            "n_estimators": [50, 100],
+            "learning_rate": [0.01]
+        }
     ]
 
     run_models(models,
