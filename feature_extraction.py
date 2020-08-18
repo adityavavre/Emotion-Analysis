@@ -102,6 +102,13 @@ if __name__ == '__main__':
     valid_utterances, valid_emotions, _ = read_data_from_dir('./data/dailydialog', split="validation")
     test_utterances, test_emotions, _ = read_data_from_dir('./data/dailydialog', split="test")
 
+    _ = extract_features(train_utterances, emotions=train_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/train_features.csv')
+    _ = extract_features(valid_utterances, emotions=valid_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/validation_features.csv')
+    _ = extract_features(test_utterances, emotions=test_emotions, corpus=train_utterances,
+                                     out_file='./data/dailydialog/test_features.csv')
+
     meld_train_utterances, meld_train_emotions = read_meld_data('./data/meld', split="train")
     meld_valid_utterances, meld_valid_emotions = read_meld_data('./data/meld', split="dev")
     meld_test_utterances, meld_test_emotions = read_meld_data('./data/meld', split="test")
@@ -113,18 +120,18 @@ if __name__ == '__main__':
     test_utterances.extend(meld_test_utterances)
     test_emotions.extend(meld_test_emotions)
 
-    train_features = extract_features(train_utterances, emotions=train_emotions, corpus=train_utterances,
-                                      out_file='./data/dailydialog/train_features.csv')
-    valid_features = extract_features(valid_utterances, emotions=valid_emotions, corpus=train_utterances,
-                                      out_file='./data/dailydialog/validation_features.csv')
-    test_features = extract_features(test_utterances, emotions=test_emotions, corpus=train_utterances,
-                                     out_file='./data/dailydialog/test_features.csv')
+    _ = extract_features(train_utterances, emotions=train_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/train_features_combined.csv')
+    _ = extract_features(valid_utterances, emotions=valid_emotions, corpus=train_utterances,
+                                      out_file='./data/dailydialog/validation_features_combined.csv')
+    _ = extract_features(test_utterances, emotions=test_emotions, corpus=train_utterances,
+                                     out_file='./data/dailydialog/test_features_combined.csv')
 
-    with open('./data/dailydialog/train_features.pkl', 'wb') as f:
-        pickle.dump(train_features, f)
-
-    with open('./data/dailydialog/validation_features.pkl', 'wb') as f:
-        pickle.dump(valid_features, f)
-
-    with open('./data/dailydialog/test_features.pkl', 'wb') as f:
-        pickle.dump(test_features, f)
+    # with open('./data/dailydialog/train_features.pkl', 'wb') as f:
+    #     pickle.dump(train_features, f)
+    #
+    # with open('./data/dailydialog/validation_features.pkl', 'wb') as f:
+    #     pickle.dump(valid_features, f)
+    #
+    # with open('./data/dailydialog/test_features.pkl', 'wb') as f:
+    #     pickle.dump(test_features, f)
