@@ -2,7 +2,7 @@ import argparse
 import os
 from collections import defaultdict
 from typing import List, Dict, Tuple
-from utils import read_data_from_dir, read_meld_data
+from utils import read_data_from_dir, read_meld_data, read_reddit_data
 import logging
 
 import numpy as np
@@ -365,6 +365,8 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--model', action="store", dest="model", type=str, required=True)
     parser.add_argument('-d', '--data', action="store", dest="data", type=str, required=True)
     parser.add_argument('-t', '--train', default=False, dest="train", action='store_true')
+    parser.add_argument('-ts', '--test', default=False, dest="test", action='store_true')
+    parser.add_argument('-p', '--pred', default=False, dest="pred", action='store_true')
 
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -376,6 +378,8 @@ if __name__ == '__main__':
     model_dir = args.model
     data_dir = args.data
     do_train = args.train
+    do_test = args.test
+    do_pred = args.pred
 
     tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
     labels = ["no emotion", "anger", "disgust", "fear", "happiness", "sadness", "surprise"]
@@ -440,7 +444,7 @@ if __name__ == '__main__':
 
         df_out.to_csv('./predictions/test_pred.csv', index=False)
 
-    else:
+    elif do_test:
         MAX_LEN = 64
         BATCH_SIZE = 32
         model  = torch.load(model_dir)
@@ -455,4 +459,35 @@ if __name__ == '__main__':
                                                                  combined=False)
 
         utterances, predictions, prediction_probs, real_values = analyzer.get_predictions(test_data_loader, id2label)
+
+    elif do_pred:
+        MAX_LEN = 64
+        BATCH_SIZE = 32
+
+        model = torch.load(model_dir)
+        analyzer = EmotionAnalyser(model, device)
+
+        sentences = read_reddit_data(data_dir)
+        ds = DailyDialogDataset(
+            utterances=sentences,
+            targets=[0]*len(sentences),
+            tokenizer=tokenizer,
+            max_len=MAX_LEN)
+        dl =  DataLoader(
+            ds,
+            batch_size=BATCH_SIZE,
+            num_workers=4)
+
+        utterances, predictions, _, _ = analyzer.get_predictions(dl, id2label)
+        os.makedirs('./predictions/', exist_ok=True)
+        df_out = pd.DataFrame(
+            list(zip(
+                utterances,
+                list(map(lambda x: id2label[x], predictions.tolist()))
+            )),
+            columns=['Utterance', 'Predicted Emotion'])
+        df_out.to_csv('./predictions/reddit_pred.csv', index=False)
+
+    else:
+        print("No command specified!\n Exiting!")
     exit(0)
