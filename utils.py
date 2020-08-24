@@ -5,6 +5,8 @@ from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 from num2words import num2words
 import pandas as pd
+import nltk.data
+from ast import literal_eval
 
 def read_data_from_dir(in_dir: str, split: str):
     """
@@ -145,12 +147,31 @@ class Tokenizer():
     def tokenize(self, x):
         return self.tokenizer(x)
 
+def read_reddit_data(filename: str):
+    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    sentences = []
+    with open(filename, 'r', encoding='utf-8') as f:
+        for line in f:
+            post = line.strip()
+            if len(post) < 20:
+                continue
+            temp_sentences = sent_detector.tokenize(post)
+            for s in temp_sentences:
+                if len(s.split()) < 3:
+                    continue
+                sentences.append(preprocess(s))
+    return list(set(sentences))
+
 if __name__ == '__main__':
     # a, b, c = read_data_from_dir('./data/dailydialog/', 'train')
     # print(a[:2])
     # print(b[:2])
     # print(c[:2])
 
-    ut, em = read_meld_data('./data/meld', 'train')
-    print(ut[:2])
-    print(em[:2])
+    # ut, em = read_meld_data('./data/meld', 'train')
+    # print(ut[:2])
+    # print(em[:2])
+
+    sents = read_reddit_data('./reddit_scraper/reddit.csv')
+    print("Len: ", len(sents))
+    print("sents: ", sents[:10])
